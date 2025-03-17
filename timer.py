@@ -1,14 +1,15 @@
 import tkinter as tk
-from tkinter import Label, ttk, StringVar
+from tkinter import Label, ttk, StringVar, Toplevel
+from tkinter.filedialog import askopenfilename
 import time
 from datetime import datetime
-from winsound import Beep
 import threading
+import winsound
 
-fontText=("Arial", 25)
+fontText=("Arial", 12)
 fontCount=("Arial", 200)
 root = tk.Tk()
-root.title('Ultra-backyard timer')
+root.title('Backyard timer')
 
 # epoch at which the race starts
 startTime = 0
@@ -21,23 +22,23 @@ loopTime = 0
 clockLabel = None
 
 # How much time each "beep" should last and their frequency
-beepDuration = 300
-beepFrequency = 1250
+soundFilename = ""
+
 
 def beep():
-    Beep(beepFrequency, beepDuration)
+    winsound.PlaySound(soundFilename, winsound.SND_FILENAME)
 
 def beepBeep():
-    Beep(beepFrequency, beepDuration)
-    Beep(beepFrequency, beepDuration)
+    winsound.PlaySound(soundFilename, winsound.SND_FILENAME)
+    winsound.PlaySound(soundFilename, winsound.SND_FILENAME)
 
 def beepBeepBeep():
-    Beep(beepFrequency, beepDuration)
-    Beep(beepFrequency, beepDuration)
-    Beep(beepFrequency, beepDuration)
+    winsound.PlaySound(soundFilename, winsound.SND_FILENAME)
+    winsound.PlaySound(soundFilename, winsound.SND_FILENAME)
+    winsound.PlaySound(soundFilename, winsound.SND_FILENAME)
 
 def newLoop():
-    Beep(beepFrequency, 1000)
+    winsound.PlaySound(soundFilename, winsound.SND_FILENAME)
 
 # Updates the clock label. Get the current epoch and computes how much hours, minutes, and seconds have elapsed since the begining of the race.
 def updateClockLabel():
@@ -103,18 +104,21 @@ def initialise():
     delayBeepBeep = get_seconds_from_time_choice(delaySecondSignal)
     delayBeepBeepBeep = get_seconds_from_time_choice(delayThirdSignal)
     loopTime = get_seconds_from_time_choice(delayNewLoop)
+    nextLoop = 0
 
-    for widget in root.winfo_children():
-        widget.destroy()
+    #for widget in root.winfo_children():
+    #    widget.destroy()
     # Text that will show the countdown until/from the start of the race
-    clockLabel = Label(root, text="00:00:00", font=fontCount)
+    counterWindow = Toplevel(root)
+    counterWindow.title('Backyard timer')
+    clockLabel = Label(counterWindow, text="00:00:00", font=fontCount)
 
     clockLabel.pack(expand=True, fill='both')
     clockLabel.after(10, startCountDown)
 
 
 def make_time_choice(text, row, defaultH, defaultM, defaultS):
-    l = Label(root, text=text, font=fontText)
+    l = Label(root, text=text)
     l.grid(row=row, column=0)
 
     holder = [StringVar(), StringVar(), StringVar()]
@@ -142,7 +146,25 @@ delaySecondSignal = make_time_choice("Délai signal sonor 2:", 2, 0, 58, 0)
 delayThirdSignal = make_time_choice("Délai signal sonor 3:", 3, 0, 59, 0)
 delayNewLoop = make_time_choice("Nouvelle boucle toute les:", 4, 1, 0, 0)
 
-startButton = tk.Button(root, text="START", font=fontText, command=initialise, bg='green')
-startButton.grid(row=5, column=0, columnspan=4)
+l = Label(root, text="Fichier audio .wav du signal:")
+l.grid(row=5, column=0)
+soundFilenameLabel = Label(root, text='Pas de fichier sélectionné')
+soundFilenameLabel.grid(row=5, column=1)
+
+def selectSoundFile():
+    global soundFilename
+    filename = askopenfilename()
+    if filename != "":
+        soundFilename = filename
+        soundFilenameLabel.configure(text=filename)
+
+selectSoundFileButton = tk.Button(root, text="Sélectionner un fichier", command=selectSoundFile)
+selectSoundFileButton.grid(row=5, column=2)
+
+testSoundFile = tk.Button(root, text="Test signal", command=newLoop)
+testSoundFile.grid(row=5, column=3)
+
+startButton = tk.Button(root, text="START", command=initialise, bg='green')
+startButton.grid(row=6, column=0, columnspan=4)
 root.state("zoomed")
 root.mainloop()
