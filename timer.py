@@ -14,31 +14,25 @@ root.title('Backyard timer')
 # epoch at which the race starts
 startTime = 0
 # How much time before the next "beeps" and loop
-delayBeep = 0
-delayBeepBeep = 0
-delayBeepBeepBeep = 0
+delaySignal1 = 0
+delaySignal2 = 0
+delaySignal3 = 0
 nextLoop = 0
 loopTime = 0
 clockLabel = None
 
 # How much time each "beep" should last and their frequency
-soundFilename = ""
+signal1Filename = None
+signal2Filename = None
+signal3Filename = None
 
-
-def beep():
-    winsound.PlaySound(soundFilename, winsound.SND_FILENAME)
-
-def beepBeep():
-    winsound.PlaySound(soundFilename, winsound.SND_FILENAME)
-    winsound.PlaySound(soundFilename, winsound.SND_FILENAME)
-
-def beepBeepBeep():
-    winsound.PlaySound(soundFilename, winsound.SND_FILENAME)
-    winsound.PlaySound(soundFilename, winsound.SND_FILENAME)
-    winsound.PlaySound(soundFilename, winsound.SND_FILENAME)
-
-def newLoop():
-    winsound.PlaySound(soundFilename, winsound.SND_FILENAME)
+def playSignal(signalIndex):
+    if signalIndex == 1:
+        winsound.PlaySound(signal1Filename, winsound.SND_FILENAME)
+    elif signalIndex == 2:
+        winsound.PlaySound(signal2Filename, winsound.SND_FILENAME)
+    else:
+        winsound.PlaySound(signal3Filename, winsound.SND_FILENAME)
 
 # Updates the clock label. Get the current epoch and computes how much hours, minutes, and seconds have elapsed since the begining of the race.
 def updateClockLabel():
@@ -57,16 +51,15 @@ def updateClockLabel():
     # In practice, there are not real "overhead" in this code so this is fine.
     if elapsed >= delayBeep:
         delayBeep += loopTime
-        threading.Thread(target=beep).start()
+        threading.Thread(target=playSignal, args=[1]).start()
     if elapsed >= delayBeepBeep:
         delayBeepBeep += loopTime
-        threading.Thread(target=beepBeep).start()
+        threading.Thread(target=playSignal, args=[2]).start()
     if elapsed >= delayBeepBeepBeep:
         delayBeepBeepBeep += loopTime 
-        threading.Thread(target=beepBeepBeep).start()
+        threading.Thread(target=playSignal, args=[3]).start()
     if elapsed >= nextLoop:
         nextLoop += loopTime
-        threading.Thread(target=newLoop).start()
     clockLabel.after(10, updateClockLabel)
 
 # Starts the countdown until the start of the race.
@@ -138,31 +131,41 @@ def make_time_choice(text, row, defaultH, defaultM, defaultS):
     s.grid(row=row, column=3)
     return holder
 
+def selectSoundFile(signalIndex, textLabel):
+    global signal1Filename, signal2Filename, signal3Filename
+    filename = askopenfilename()
+    if filename != "":
+        if signalIndex == 1:
+            signal1Filename = filename
+        elif signalIndex == 2:
+            signal2Filename = filename
+        else:
+            signal3Filename = filename
+        textLabel.configure(text=filename)
+
+def make_select_sound(row, col, signalIndex):
+    l = Label(root, text="Fichier audio (.wav) du signal:")
+    l.grid(row=row, column=col)
+    textLabel = Label(root, text='Pas de fichier sélectionné')
+    textLabel.grid(row=row, column=col+1)
+    button = tk.Button(root, text="Sélectionner un fichier", command=lambda: selectSoundFile(signalIndex, textLabel))
+    button.grid(row=row, column=col+2)
+    testButton = tk.Button(root, text="Test signal", command=lambda: threading.Thread(target=playSignal, args=[signalIndex]).start())
+    testButton.grid(row=row, column=col+3)
+
 # Initial layout for the application. Give the user a way to select the start time of the race and a big button to launch the countdown.
 # This is not supposed to be "good looking". The goal is to be functionnal with as few overhead as possible.
 startRaceTime = make_time_choice("Heure du début de la course:", 0, 9, 0, 0)
 delayFirstSignal = make_time_choice("Délai signal sonor 1:", 1, 0, 57, 0)
+make_select_sound(1, 4, 1)
+
 delaySecondSignal = make_time_choice("Délai signal sonor 2:", 2, 0, 58, 0)
+make_select_sound(2, 4, 2)
+
 delayThirdSignal = make_time_choice("Délai signal sonor 3:", 3, 0, 59, 0)
+make_select_sound(3, 4, 3)
+
 delayNewLoop = make_time_choice("Nouvelle boucle toute les:", 4, 1, 0, 0)
-
-l = Label(root, text="Fichier audio .wav du signal:")
-l.grid(row=5, column=0)
-soundFilenameLabel = Label(root, text='Pas de fichier sélectionné')
-soundFilenameLabel.grid(row=5, column=1)
-
-def selectSoundFile():
-    global soundFilename
-    filename = askopenfilename()
-    if filename != "":
-        soundFilename = filename
-        soundFilenameLabel.configure(text=filename)
-
-selectSoundFileButton = tk.Button(root, text="Sélectionner un fichier", command=selectSoundFile)
-selectSoundFileButton.grid(row=5, column=2)
-
-testSoundFile = tk.Button(root, text="Test signal", command=newLoop)
-testSoundFile.grid(row=5, column=3)
 
 startButton = tk.Button(root, text="START", command=initialise, bg='green')
 startButton.grid(row=6, column=0, columnspan=4)
